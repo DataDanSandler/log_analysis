@@ -48,33 +48,40 @@ Step 1a: Download Geo IP MaxMind Libraries For Apache
 ---------------
 Reference http://dev.maxmind.com/geoip/mod_geoip2 
 
-0) yum install httpd-devel apr-devel
-1) sudo yum install GeoIP GeoIP-devel GeoIP-data zlib-devel
-2) cd  /home/cloudera/logs/geoip
-3) wget http://www.maxmind.com/download/geoip/api/c/GeoIP-latest.tar.gz 
-4) wget http://www.maxmind.com/download/geoip/api/mod_geoip2/mod_geoip2-latest.tar.gz 
-5) wget http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz 
-6) wget http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz 
-7) tar -zxvf mod_geoip2-latest.tar.gz
-8) tar -zxvf GeoIP-latest.tar.gz
-9) gunzip GeoLiteCity.dat.gz
-10) gunzip  GeoIPASNum.dat.gz
-11) mv *.dat GeoIP-1.5.0/data
-12) cd GeoIP-1.5.0
-13) ./configure && make && make install
-14) mkdir /usr/local/share/GeoIP
-15) cd -
-16) cp GeoIP-1.5.0/data/*.dat  /usr/local/share/GeoIP
-17) cp mod_geoip2_1.2.8/mod_geoip.c  /usr/lib64/httpd/modules
-18) cd mod_geoip2_1.2.8
-19) apxs -i -a -L/usr/lib64 -I/usr/include -lGeoIP -c mod_geoip.c
-20) vi /etc/ld.so.conf
-	a. Add :
-		/usr/local/lib
-	b. Save
-	c. Then run "ldconfig"
-21) Add the following to httpd.conf:
-	
+<pre>
+yum install httpd-devel apr-devel
+sudo yum install GeoIP GeoIP-devel GeoIP-data zlib-devel
+cd  /home/cloudera/logs/geoip
+wget http://www.maxmind.com/download/geoip/api/c/GeoIP-latest.tar.gz 
+wget http://www.maxmind.com/download/geoip/api/mod_geoip2/mod_geoip2-latest.tar.gz 
+wget http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz 
+wget http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz 
+tar -zxvf mod_geoip2-latest.tar.gz
+tar -zxvf GeoIP-latest.tar.gz
+gunzip GeoLiteCity.dat.gz
+gunzip  GeoIPASNum.dat.gz
+mv *.dat GeoIP-1.5.0/data
+cd GeoIP-1.5.0
+./configure && make && make install
+mkdir /usr/local/share/GeoIP
+cd -
+cp GeoIP-1.5.0/data/*.dat  /usr/local/share/GeoIP
+cp mod_geoip2_1.2.8/mod_geoip.c  /usr/lib64/httpd/modules
+cd mod_geoip2_1.2.8
+apxs -i -a -L/usr/lib64 -I/usr/include -lGeoIP -c mod_geoip.c
+vi /etc/ld.so.conf
+</pre>
+
+   a. Add :
+
+	/usr/local/lib
+
+   b. Save
+
+   c. Then run "ldconfig"
+
+Add the following to httpd.conf:
+<pre>	
 #GeoIP library
 	
 <IfModule mod_geoip.c>
@@ -86,7 +93,7 @@ Reference http://dev.maxmind.com/geoip/mod_geoip2
   GeoIPScanProxyHeaders On
  GeoIPUseLastXForwardedForIP On
 </IfModule>
-
+</pre>
 
 Step 2: Apache Log File format and rotation
 ---------------
