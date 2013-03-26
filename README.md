@@ -42,8 +42,51 @@ Step 1: Deploy HBase Table
          
 	 Ex: help 'create'
 
-   b) create 'apache_access_log', {NAME => 'common'}, {NAME => 'http'}, {NAME => 'misc'}
+   b) create 'apache_access_log', {NAME => 'common'}, {NAME => 'http'}, {NAME => 'misc'}, {NAME => 'geoip_common'}, {NAME => 'geoip_country'}, {NAME => 'geoip_city'}
    
+Step 1a: Download Geo IP MaxMind Libraries For Apache
+---------------
+Reference http://dev.maxmind.com/geoip/mod_geoip2 
+
+0) yum install httpd-devel apr-devel
+1) sudo yum install GeoIP GeoIP-devel GeoIP-data zlib-devel
+2) cd  /home/cloudera/logs/geoip
+3) wget http://www.maxmind.com/download/geoip/api/c/GeoIP-latest.tar.gz 
+4) wget http://www.maxmind.com/download/geoip/api/mod_geoip2/mod_geoip2-latest.tar.gz 
+5) wget http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz 
+6) wget http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz 
+7) tar -zxvf mod_geoip2-latest.tar.gz
+8) tar -zxvf GeoIP-latest.tar.gz
+9) gunzip GeoLiteCity.dat.gz
+10) gunzip  GeoIPASNum.dat.gz
+11) mv *.dat GeoIP-1.5.0/data
+12) cd GeoIP-1.5.0
+13) ./configure && make && make install
+14) mkdir /usr/local/share/GeoIP
+15) cd -
+16) cp GeoIP-1.5.0/data/*.dat  /usr/local/share/GeoIP
+17) cp mod_geoip2_1.2.8/mod_geoip.c  /usr/lib64/httpd/modules
+18) cd mod_geoip2_1.2.8
+19) apxs -i -a -L/usr/lib64 -I/usr/include -lGeoIP -c mod_geoip.c
+20) vi /etc/ld.so.conf
+	a. Add :
+		/usr/local/lib
+	b. Save
+	c. Then run "ldconfig"
+21) Add the following to httpd.conf:
+	
+#GeoIP library
+	
+<IfModule mod_geoip.c>
+  GeoIPEnable On
+  GeoIPDBFile /home/cloudera/logs/geoip/GeoIP-1.5.0/data/GeoIP.dat MemoryCache
+  GeoIPDBFile /home/cloudera/logs/geoip/GeoIP-1.5.0/data/GeoLiteCity.dat MemoryCache
+  GeoIPDBFile /home/cloudera/logs/geoip/GeoIP-1.5.0/data/GeoIPASNum.dat MemoryCache
+  GeoIPEnableUTF8 On  
+  GeoIPScanProxyHeaders On
+ GeoIPUseLastXForwardedForIP On
+</IfModule>
+
 
 Step 2: Apache Log File format and rotation
 ---------------
@@ -58,7 +101,7 @@ Step 2: Apache Log File format and rotation
  
  	# Thanks to http://www.cepheid.org/~jeff/?p=30 
  	# logs for Flume injestion. Custom log format for easier regex matching
- 	LogFormat "%{UNIQUE_ID}e	%v	%h	%l	%u	%{%Y%m%d%H%M%S}t	%r	%>s	%b	%{Referer}i	%{User-Agent}i" vfcombined
+ 	LogFormat "%{UNIQUE_ID}e	%v	%h	%l	%u	%{%Y%m%d%H%M%S}t	%r	%>s	%b	%{Referer}i	%{User-Agent}i	%{GEOIP_COUNTRY_CODE}e  %{GEOIP_ADDR}e	%{GEOIP_CONTINENT_CODE}e	%{GEOIP_COUNTRY_NAME}e	%{GEOIP_REGION}e	%{GEOIP_REGION_NAME}e	%{GEOIP_CITY}e	%{GEOIP_METRO_CODE}e	%{GEOIP_AREA_CODE}e	%{GEOIP_LATITUDE}e	%{GEOIP_LONGITUDE}e	%{GEOIP_POSTAL_CODE}e" vfcombined
  	CustomLog "| /usr/sbin/rotatelogs /var/log/httpd/al_flume.%Y%m%d%H%M%S 60" vfcombined
 
    d)  Uncomment
